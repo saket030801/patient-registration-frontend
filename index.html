@@ -17,6 +17,60 @@
 
 </head>
 <body>
+    <header>
+        <h1>Patient Registration System</h1>
+        <nav>
+            <ul>
+                <li><a href="#registration" class="active" data-section="registration">Registration</a></li>
+                <li><a href="#patient-list" data-section="patient-list">View Patients</a></li>
+                <li><a href="#sql-query" data-section="sql-query">SQL Query</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="registration" class="section active">
+            <h2>Register new patient</h2>
+            <form id="registration-form">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                   <input type="text" id="full-name" name="full-name" maxlength="100" required>
+                   <small class="error" id="full-name-error"></small> 
+                </div>
+                <div class="form-group">
+                    <label for="date-of-birth">Date of Birth</label>
+                    <input type="date" id="date-of-birth" name="date-of-birth" required>
+                    <small class="error" id="date-of-birth-error"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <small class="error" id="gender-error"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="contact-phone">Contact Phone</label>
+                    <input type="tel" id="contact-phone" name="contact-phone">
+                    <small class="error" id="contact-phone-error"></small>
+                </div>
+
+                <button type="submit">Register Patient</button>
+                
+            </form>
+        </section>
+        <section id="patient-list" class="section"></section>
+        <section id="sql-query" class="section"></section>
+    </main>
+
+    <footer>
+        <p><strong>Note :</strong> All data is stored in your browser's local storage.</p>
+        <button id="reset-db" class="danger-button">Reset Database</button>
+    </footer>
 
     <script type="module" src="app.js"></script>
     
