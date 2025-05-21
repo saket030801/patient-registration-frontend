@@ -16,13 +16,12 @@ async function initializeDatabase(){
         db = new PGlite(`idb://${DB_NAME}`);
         await db.waitReady;
 
-
         await db.exec(`
             CREATE TABLE IF NOT EXISTS ${PATIENTS_TABLE} (
                 id TEXT PRIMARY KEY,
                 full_name TEXT NOT NULL,
                 date_of_birth DATE NOT NULL,
-                contact_number TEXT NOT NULL,
+                contact_phone TEXT,
                 registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 gender TEXT NOT NULL
             )
@@ -55,7 +54,6 @@ function showSection(sectionId){
 }
 
 async function loadPatients(){
-
     const tableBody = document.getElementById('patient-table-body');
     
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
@@ -80,10 +78,11 @@ async function loadPatients(){
             });
             
             row.innerHTML = `
+                <td>${patient.id}</td>
                 <td>${patient.full_name}</td>
                 <td>${formattedDob}</td>
-                <td>${patient.contact_number}</td>
                 <td>${patient.gender}</td>
+                <td>${patient.contact_phone || 'N/A'}</td>
             `;
 
             tableBody.appendChild(row);
@@ -103,12 +102,12 @@ async function getAllPatients() {
     }
 }
 
-async function registerPatient(fullName, dateOfBirth, contactNumber, gender){
+async function registerPatient(fullName, dateOfBirth, contactPhone, gender){
     try{
         const patientId = generateUUID();
         await db.exec(`
-            INSERT INTO ${PATIENTS_TABLE} (id, full_name, date_of_birth, contact_number, gender)
-            VALUES ('${patientId}', '${fullName}', '${dateOfBirth}', '${contactNumber}', '${gender}')
+            INSERT INTO ${PATIENTS_TABLE} (id, full_name, date_of_birth, contact_phone, gender)
+            VALUES ('${patientId}', '${fullName}', '${dateOfBirth}', '${contactPhone}', '${gender}')
         `);
 
         return {success: true, patientId};
@@ -118,6 +117,25 @@ async function registerPatient(fullName, dateOfBirth, contactNumber, gender){
     }
 }
 
+
+async function resetDatabase(){
+    try{
+        await db.exec(`DROP TABLE IF EXISTS ${PATIENTS_TABLE}`);
+        await db.exec(`
+            CREATE TABLE ${PATIENTS_TABLE} (
+                id TEXT PRIMARY KEY,
+                full_name TEXT NOT NULL,
+                date_of_birth DATE NOT NULL,
+                contact_phone TEXT,
+                registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                gender TEXT NOT NULL
+            );
+        `);
+        return { success: true };
+    } catch (error){
+        console.error('Error resetting database:', error);
+    }
+}
 
 // intialize the application
 
@@ -137,14 +155,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    const registerForm = document.getElementById('register-form');
+    // Add reset database button event listener
+    const resetDbButton = document.getElementById('reset-db');
+    if (resetDbButton) {
+        resetDbButton.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to reset the database? This will delete all patient data.')) {
+                const result = await resetDatabase();
+                if (result && result.success) {
+                    alert('Database reset successfully');
+                    if (document.getElementById('patient-list').classList.contains('active')) {
+                        loadPatients();
+                    }
+                } else {
+                    alert('Failed to reset database');
+                }
+            }
+        });
+    }
+
+    const registerForm = document.getElementById('registration-form');
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const fullName = document.getElementById('full-name').value.trim();
             const dateOfBirth = document.getElementById('date-of-birth').value.trim();
-            const contactNumber = document.getElementById('contact-number').value.trim();
+            const contactPhone = document.getElementById('contact-phone').value.trim();
             const gender = document.getElementById('gender').value.trim();
 
             let isValid = true;
@@ -163,13 +199,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('date-of-birth-error').textContent = '';
             }
 
-            if(!contactNumber){
-                document.getElementById('contact-number-error').textContent = 'Contact number is required';
-                isValid = false;
-            } else {
-                document.getElementById('contact-number-error').textContent = '';
-            }
-
             if(!gender){
                 document.getElementById('gender-error').textContent = 'Gender is required';
                 isValid = false;
@@ -181,19 +210,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            const feedback = document.getElementById('register-feedback');
+            const feedback = document.getElementById('form-feedback');
             if (feedback) {
                 feedback.textContent = 'Registering patient...';
                 feedback.classList.remove('success', 'error');
             }
 
-            const result = await registerPatient(fullName, dateOfBirth, contactNumber, gender);
+            const result = await registerPatient(fullName, dateOfBirth, contactPhone, gender);
             if(result.success){
                 if (feedback) {
                     feedback.textContent = 'Patient registered successfully!';
                     feedback.classList.add('success');
                 }
                 registerForm.reset();
+                // Show the patient list after successful registration
+                showSection('patient-list');
             } else {
                 if (feedback) {
                     feedback.textContent = `Error: ${result.error}`;
