@@ -1,10 +1,15 @@
 import { PGlite } from "@electric-sql/pglite";
 
-
 let db;
 const DB_NAME = 'patient_registration_db';
 const PATIENTS_TABLE = 'patients';
 
+// Browser-compatible UUID generation function
+function generateUUID() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
 
 async function initializeDatabase(){
     try{
@@ -50,6 +55,67 @@ function showSection(sectionId){
 }
 
 async function loadPatients(){
+
+    const tableBody = document.getElementById('patient-table-body');
+    
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+
+    const result = await getAllPatients();
+
+    if(result.success){
+        if(result.patients.length === 0){
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No patients found</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+
+        result.patients.forEach(patient => {
+            const row = document.createElement('tr');
+            const dob = new Date(patient.date_of_birth);
+            const formattedDob = dob.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            row.innerHTML = `
+                <td>${patient.full_name}</td>
+                <td>${formattedDob}</td>
+                <td>${patient.contact_number}</td>
+                <td>${patient.gender}</td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    } else {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Error loading patients</td></tr>';
+    }
+}
+
+async function getAllPatients() {
+    try {
+        const result = await db.query(`SELECT * FROM ${PATIENTS_TABLE} ORDER BY registration_date DESC`);
+        return { success: true, patients: result.rows || [] };
+    } catch (error) {
+        console.error('Error fetching patients:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function registerPatient(fullName, dateOfBirth, contactNumber, gender){
+    try{
+        const patientId = generateUUID();
+        await db.exec(`
+            INSERT INTO ${PATIENTS_TABLE} (id, full_name, date_of_birth, contact_number, gender)
+            VALUES ('${patientId}', '${fullName}', '${dateOfBirth}', '${contactNumber}', '${gender}')
+        `);
+
+        return {success: true, patientId};
+    } catch (error){
+        console.error('Error registering patient:', error);
+        return {success: false, error: error.message};
+    }
 }
 
 
@@ -71,6 +137,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-})    
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('full-name').value.trim();
+            const dateOfBirth = document.getElementById('date-of-birth').value.trim();
+            const contactNumber = document.getElementById('contact-number').value.trim();
+            const gender = document.getElementById('gender').value.trim();
+
+            let isValid = true;
+
+            if(!fullName){
+                document.getElementById('full-name-error').textContent = 'Full name is required';
+                isValid = false;
+            } else {
+                document.getElementById('full-name-error').textContent = '';
+            }    
+
+            if(!dateOfBirth){
+                document.getElementById('date-of-birth-error').textContent = 'Date of birth is required';
+                isValid = false;
+            } else {
+                document.getElementById('date-of-birth-error').textContent = '';
+            }
+
+            if(!contactNumber){
+                document.getElementById('contact-number-error').textContent = 'Contact number is required';
+                isValid = false;
+            } else {
+                document.getElementById('contact-number-error').textContent = '';
+            }
+
+            if(!gender){
+                document.getElementById('gender-error').textContent = 'Gender is required';
+                isValid = false;
+            } else {
+                document.getElementById('gender-error').textContent = '';
+            }
+
+            if(!isValid){
+                return;
+            }
+
+            const feedback = document.getElementById('register-feedback');
+            if (feedback) {
+                feedback.textContent = 'Registering patient...';
+                feedback.classList.remove('success', 'error');
+            }
+
+            const result = await registerPatient(fullName, dateOfBirth, contactNumber, gender);
+            if(result.success){
+                if (feedback) {
+                    feedback.textContent = 'Patient registered successfully!';
+                    feedback.classList.add('success');
+                }
+                registerForm.reset();
+            } else {
+                if (feedback) {
+                    feedback.textContent = `Error: ${result.error}`;
+                    feedback.classList.add('error');
+                }
+            }
+
+        });
+    }
+
+
+            
+}); 
     
     
