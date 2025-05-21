@@ -4,18 +4,20 @@ let db;
 const DB_NAME = 'patient_registration_db';
 const PATIENTS_TABLE = 'patients';
 
-// Browser-compatible UUID generation function
+// Quick uuid generator
 function generateUUID() {
     return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     );
 }
 
+// Set up our local DB
 async function initializeDatabase(){
     try{
         db = new PGlite(`idb://${DB_NAME}`);
         await db.waitReady;
 
+        // Create our table if it doesn't exist
         await db.exec(`
             CREATE TABLE IF NOT EXISTS ${PATIENTS_TABLE} (
                 id TEXT PRIMARY KEY,
@@ -29,18 +31,22 @@ async function initializeDatabase(){
 
         return true;
     } catch (error){
-        console.error('Error initializing database:', error);
+        console.error('DB init failed:', error);
         return false;
     }
 }
 
+// Toggle between different sections of the app
 function showSection(sectionId){
+    // Hide all sections first
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
 
+    // Show the one we want
     document.getElementById(sectionId).classList.add('active');
 
+    // Update nav to match
     document.querySelectorAll('nav a').forEach(link => {
         link.classList.remove('active');
         if(link.getAttribute('data-section') === sectionId){
@@ -48,14 +54,15 @@ function showSection(sectionId){
         }
     });
 
+    // Load patients if we're on that page
     if(sectionId === 'patient-list'){
         loadPatients();
     }
 }
 
+// Load and display all patients
 async function loadPatients(){
     const tableBody = document.getElementById('patient-table-body');
-    
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
 
     const result = await getAllPatients();
@@ -68,6 +75,7 @@ async function loadPatients(){
 
         tableBody.innerHTML = '';
 
+        // Format each patient row
         result.patients.forEach(patient => {
             const row = document.createElement('tr');
             const dob = new Date(patient.date_of_birth);
@@ -77,7 +85,7 @@ async function loadPatients(){
                 day: 'numeric'
             });
             
-            // Format the UUID to be more user-friendly
+            // Make the ID look nicer in the UI
             const formattedId = `P-${patient.id.slice(0, 4).toUpperCase()}`;
             
             row.innerHTML = `
@@ -95,16 +103,18 @@ async function loadPatients(){
     }
 }
 
+// Get all patients, sorted by registration date
 async function getAllPatients() {
     try {
         const result = await db.query(`SELECT * FROM ${PATIENTS_TABLE} ORDER BY registration_date DESC`);
         return { success: true, patients: result.rows || [] };
     } catch (error) {
-        console.error('Error fetching patients:', error);
+        console.error('Failed to fetch patients:', error);
         return { success: false, error: error.message };
     }
 }
 
+// Register a new patient
 async function registerPatient(fullName, dateOfBirth, contactPhone, gender){
     try{
         const patientId = generateUUID();
@@ -115,12 +125,12 @@ async function registerPatient(fullName, dateOfBirth, contactPhone, gender){
 
         return {success: true, patientId};
     } catch (error){
-        console.error('Error registering patient:', error);
+        console.error('Registration failed:', error);
         return {success: false, error: error.message};
     }
 }
 
-
+// Reset the database
 async function resetDatabase(){
     try{
         await db.exec(`DROP TABLE IF EXISTS ${PATIENTS_TABLE}`);
@@ -136,11 +146,11 @@ async function resetDatabase(){
         `);
         return { success: true };
     } catch (error){
-        console.error('Error resetting database:', error);
+        console.error('DB reset failed:', error);
     }
 }
 
-
+// Run SQL queries - only SELECT allowed
 async function executeQuery(query){
     try{
         const trimmedQuery = query.trim().toLowerCase();
@@ -155,7 +165,7 @@ async function executeQuery(query){
     }
 }
 
-
+// Display query results 
 function displayQueryResults(result) {
     const headerRow = document.getElementById('query-results-header');
     const resultsBody = document.getElementById('query-results-body');
@@ -166,7 +176,7 @@ function displayQueryResults(result) {
         feedback.classList.add('success');
         feedback.classList.remove('error');
         
-        // Set table headers
+        // Set up the table headers
         headerRow.innerHTML = '';
         if (result.columns.length > 0) {
             const tr = document.createElement('tr');
@@ -178,7 +188,7 @@ function displayQueryResults(result) {
             headerRow.appendChild(tr);
         }
         
-        // Set table body
+        // Fill in the table body
         resultsBody.innerHTML = '';
         if (result.result.length === 0) {
             const tr = document.createElement('tr');
@@ -190,11 +200,11 @@ function displayQueryResults(result) {
                 result.columns.forEach(column => {
                     const td = document.createElement('td');
                     if (column === 'id') {
-                        // Format the ID to match patient list format
+                        // Format IDs to match patient list
                         const formattedId = `P-${row[column].slice(0, 4).toUpperCase()}`;
                         td.innerHTML = `<span class="patient-id">${formattedId}</span>`;
                     } else if (column === 'date_of_birth') {
-                        // Format date of birth
+                        // Format dates nicely
                         const dob = new Date(row[column]);
                         td.textContent = dob.toLocaleDateString('en-US', {
                             year: 'numeric',
