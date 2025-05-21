@@ -14,20 +14,17 @@ A modern web application for managing patient registrations with a sleek dark mo
 ## Screenshots
 
 ### Patient Registration Form
-![Patient Registration Form](screenshots/registration-form.png)
+![Patient Registration Form](screenshots/patient_registration_form.png)
 *Modern registration form with validation and dark mode interface*
 
 ### Patient List View
-![Patient List](screenshots/patient-list.png)
+![Patient List](screenshots/patient_list.png)
 *View all registered patients with formatted patient IDs*
 
 ### SQL Query Interface
-![SQL Query Interface](screenshots/sql-query.png)
+![SQL Query Interface](screenshots/sql_query.png)
 *Run custom SQL queries with available columns information*
 
-### Mobile Responsive View
-![Mobile View](screenshots/mobile-view.png)
-*Responsive design that works seamlessly on mobile devices*
 
 ## Live Demo
 
@@ -38,7 +35,7 @@ A modern web application for managing patient registrations with a sleek dark mo
 ### Prerequisites
 
 - A modern web browser (Chrome, Firefox, Safari, or Edge)
-- A local development server (optional but recommended)
+- Node.js installed (for using npx serve)
 
 ### Setup
 
@@ -48,27 +45,15 @@ git clone https://github.com/yourusername/patient-registration-system.git
 cd patient-registration-system
 ```
 
-2. Start a local server. You can use any of these methods:
-
-
-
-
-
-Using Node.js (if you have it installed):
+2. Start the local server (no installation required):
 ```bash
-# Install http-server globally
-npm install -g http-server
-
-# Start the server
-http-server
+npx serve .
 ```
+This will start the server at http://localhost:3000
 
-3. Open your browser and navigate to:
-```
-http://localhost:8000
-```
+3. Open your browser and navigate to http://localhost:3000
 
-
+Note: No `npm install` is required as all dependencies are loaded via CDN.
 
 ## Database Schema
 
