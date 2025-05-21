@@ -140,6 +140,84 @@ async function resetDatabase(){
     }
 }
 
+
+async function executeQuery(query){
+    try{
+        const trimmedQuery = query.trim().toLowerCase();
+        if(!trimmedQuery.startsWith('select')){
+            return {success: false, error: 'Only SELECT queries are supported'};
+        }
+
+        const result = await db.query(query);
+        return {success: true, result: result.rows, columns : Object.keys(result.rows[0] || {})};
+    } catch (error){
+        return {success: false, error: error.message};
+    }
+}
+
+
+function displayQueryResults(result) {
+    const headerRow = document.getElementById('query-results-header');
+    const resultsBody = document.getElementById('query-results-body');
+    const feedback = document.getElementById('query-feedback');
+    
+    if (result.success) {
+        feedback.textContent = `Query executed successfully. ${result.result.length} rows returned.`;
+        feedback.classList.add('success');
+        feedback.classList.remove('error');
+        
+        // Set table headers
+        headerRow.innerHTML = '';
+        if (result.columns.length > 0) {
+            const tr = document.createElement('tr');
+            result.columns.forEach(column => {
+                const th = document.createElement('th');
+                th.textContent = column;
+                tr.appendChild(th);
+            });
+            headerRow.appendChild(tr);
+        }
+        
+        // Set table body
+        resultsBody.innerHTML = '';
+        if (result.result.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="${result.columns.length}">No results found</td>`;
+            resultsBody.appendChild(tr);
+        } else {
+            result.result.forEach(row => {
+                const tr = document.createElement('tr');
+                result.columns.forEach(column => {
+                    const td = document.createElement('td');
+                    if (column === 'id') {
+                        // Format the ID to match patient list format
+                        const formattedId = `P-${row[column].slice(0, 4).toUpperCase()}`;
+                        td.innerHTML = `<span class="patient-id">${formattedId}</span>`;
+                    } else if (column === 'date_of_birth') {
+                        // Format date of birth
+                        const dob = new Date(row[column]);
+                        td.textContent = dob.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                    } else {
+                        td.textContent = row[column] !== null ? row[column] : 'N/A';
+                    }
+                    tr.appendChild(td);
+                });
+                resultsBody.appendChild(tr);
+            });
+        }
+    } else {
+        feedback.textContent = `Error: ${result.error}`;
+        feedback.classList.add('error');
+        feedback.classList.remove('success');
+        headerRow.innerHTML = '';
+        resultsBody.innerHTML = '';
+    }
+}
+
 // intialize the application
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -247,6 +325,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         });
     }
+
+    const queryExecuteButton = document.getElementById('execute-query');
+    queryExecuteButton.addEventListener('click', async (e) => {
+        const sqlQuery = document.getElementById('sql-query-input').value.trim();
+        
+        if (!sqlQuery) {
+            document.getElementById('query-feedback').textContent = 'Please enter a SQL query';
+            document.getElementById('query-feedback').classList.add('error');
+            return;
+        }
+        
+        document.getElementById('query-feedback').textContent = 'Executing query...';
+        document.getElementById('query-feedback').classList.remove('success', 'error');
+        
+        const result = await executeQuery(sqlQuery);
+        displayQueryResults(result);
+    })
 
 
             
