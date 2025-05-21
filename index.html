@@ -65,8 +65,36 @@
         </section>
 
         <section id="patient-list" class="section">
+            <h2>Patient List</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Full Name</th>
+                            <th>Date of Birth</th>
+                            <th>Gender</th>
+                            <th>Contact Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patient-table-body"></tbody>
+                </table>
+            </div>
         </section>
         <section id="sql-query" class="section">
+            <h2>SQL Query</h2>
+            <p class="info">Run SQL SELECT queries on the patient database. Only SELECT queries are allowed.</p>
+            <div class="form-group">
+                <textarea id="sql-query-input" placeholder="Enter your SQL query (e.g., SELECT * FROM patients)"></textarea>
+                <button id="execute-query">Execute Query</button>
+            </div>
+            <div id="query-feedback" class="feedback"></div>
+            <div class="table-container">
+                <table id="query-results">
+                    <thead id="query-results-header"></thead>
+                    <tbody id="query-results-body"></tbody>
+                </table>
+            </div>
         </section>
     </main>
 

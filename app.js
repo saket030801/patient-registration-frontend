@@ -18,7 +18,7 @@ async function initializeDatabase(){
                 full_name TEXT NOT NULL,
                 date_of_birth DATE NOT NULL,
                 contact_number TEXT NOT NULL,
-                registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 gender TEXT NOT NULL
             )
         `);
@@ -50,12 +50,6 @@ function showSection(sectionId){
 }
 
 async function loadPatients(){
-}
-
-async function loadPatients(){
-    const patients = await db.select(`SELECT * FROM ${PATIENTS_TABLE}`);
-    const patientListSection = document.getElementById('patient-list');
-    
 }
 
 
