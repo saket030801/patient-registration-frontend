@@ -77,8 +77,11 @@ async function loadPatients(){
                 day: 'numeric'
             });
             
+            // Format the UUID to be more user-friendly
+            const formattedId = `P-${patient.id.slice(0, 4).toUpperCase()}`;
+            
             row.innerHTML = `
-                <td>${patient.id}</td>
+                <td><span class="patient-id">${formattedId}</span></td>
                 <td>${patient.full_name}</td>
                 <td>${formattedDob}</td>
                 <td>${patient.gender}</td>
@@ -216,18 +219,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 feedback.classList.remove('success', 'error');
             }
 
-            const result = await registerPatient(fullName, dateOfBirth, contactPhone, gender);
-            if(result.success){
-                if (feedback) {
-                    feedback.textContent = 'Patient registered successfully!';
-                    feedback.classList.add('success');
+            try {
+                const result = await registerPatient(fullName, dateOfBirth, contactPhone, gender);
+                if(result.success){
+                    if (feedback) {
+                        feedback.textContent = 'Patient registered successfully!';
+                        feedback.classList.remove('loading', 'error');
+                        feedback.classList.add('success');
+                    }
+                    registerForm.reset();
+                } else {
+                    if (feedback) {
+                        feedback.textContent = `Error: ${result.error}`;
+                        feedback.classList.remove('loading', 'success');
+                        feedback.classList.add('error');
+                    }
+                    console.error('Registration failed:', result.error);
                 }
-                registerForm.reset();
-                // Show the patient list after successful registration
-                showSection('patient-list');
-            } else {
+            } catch (error) {
+                console.error('Error registering patient:', error);
                 if (feedback) {
-                    feedback.textContent = `Error: ${result.error}`;
+                    feedback.textContent = 'An error occurred. Please try again later.';
+                    feedback.classList.remove('loading', 'success');
                     feedback.classList.add('error');
                 }
             }
